@@ -8,8 +8,6 @@ services:
       - '3000:3000'
     volumes:
       - .:/opt/src
-    depends_on:
-      - db
   db:
     image: postgres
     ports:

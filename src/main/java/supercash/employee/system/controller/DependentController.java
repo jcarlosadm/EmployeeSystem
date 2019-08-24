@@ -1,4 +1,4 @@
-package supercash.employee.system.model.controller;
+package supercash.employee.system.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,21 +33,30 @@ public class DependentController {
 
     @PostMapping
     @PreAuthorize("hasRole('USER')")
-    public Dependent post(@Valid Dependent dependent) {
+    public Dependent post(@RequestBody @Valid Dependent dependent) {
         if (dependent.getId() != null) { dependent.setId(null); }
+        if (dependent.getCpf() != null && dependentRepository.existsByCpf(dependent.getCpf())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "cpf already exists");
+        }
         return dependentRepository.save(dependent);
     }
 
     @PutMapping
     @PreAuthorize("hasRole('USER')")
-    public Dependent put(@Valid Dependent dependent) {
+    public Dependent put(@RequestBody @Valid Dependent dependent) {
         checkId(dependent);
+        if (dependent.getCpf() != null) {
+            Dependent dependent1 = dependentRepository.findByCpf(dependent.getCpf()).orElse(null);
+            if (dependent1 != null && !dependent1.getId().equals(dependent.getId())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "cpf already exists");
+            }
+        }
         return dependentRepository.save(dependent);
     }
 
     @DeleteMapping
     @PreAuthorize("hasRole('USER')")
-    public ApiResponse delete(Dependent dependent) {
+    public ApiResponse delete(@RequestBody @Valid Dependent dependent) {
         checkId(dependent);
         dependentRepository.delete(dependent);
         return new ApiResponse(true, "dependent deleted", Collections.emptyList());
@@ -56,6 +65,8 @@ public class DependentController {
     private void checkId(Dependent dependent) {
         if (dependent.getId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id cannot be null");
+        } else if (!dependentRepository.existsById(dependent.getId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "id not found");
         }
     }
 }
